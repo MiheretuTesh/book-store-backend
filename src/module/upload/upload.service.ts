@@ -25,10 +25,9 @@ export class UploadService {
     }
 
     try {
-
       const b64 = Buffer.from(file.buffer).toString('base64');
       const dataURI = `data:${file.mimetype};base64,${b64}`;
-            
+
       const result = await cloudinary.uploader.upload(dataURI, {
         resource_type: 'auto',
         folder: 'book-library',
@@ -36,7 +35,9 @@ export class UploadService {
 
       return result.secure_url;
     } catch (error) {
-      throw new BadRequestException(`Failed to upload file to Cloudinary: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to upload file to Cloudinary: ${error.message}`,
+      );
     }
   }
 
@@ -46,9 +47,9 @@ export class UploadService {
         folder: 'book-library',
         resource_type: 'auto',
       });
-      
+
       await fs.unlink(file.path);
-      
+
       return {
         url: result.secure_url,
         publicId: result.public_id,

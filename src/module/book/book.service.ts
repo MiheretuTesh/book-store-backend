@@ -20,8 +20,6 @@ export class BookService {
     error?: string;
   }> {
     try {
-      // Remove userId from createBookDto
-      // delete createBookDto.userId;
       const createdBook = new this.bookModel(createBookDto);
       const savedBook = await createdBook.save();
       return {
@@ -319,6 +317,80 @@ export class BookService {
         {
           success: false,
           message: 'Failed to filter books',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getSpecialBooks(): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      newArrivals: Book[];
+      bestSellers: Book[];
+      featuredBooks: Book[];
+    };
+  }> {
+    try {
+      const newArrivals = await this.bookModel
+        .find()
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .exec();
+
+      const bestSellers = await this.bookModel
+        .find({ isBestSeller: true })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .exec();
+
+      const featuredBooks = await this.bookModel
+        .find({ isFeatured: true })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .exec();
+
+      return {
+        success: true,
+        message: 'Special books retrieved successfully',
+        data: {
+          newArrivals,
+          bestSellers,
+          featuredBooks,
+        },
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to retrieve special books',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getBooksByGenre(genre: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: Book[];
+    error?: string;
+  }> {
+    try {
+      const books = await this.bookModel.find({ genre }).exec();
+      return {
+        success: true,
+        message: 'Books retrieved successfully',
+        data: books,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to retrieve books by genre',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

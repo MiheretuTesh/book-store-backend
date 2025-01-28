@@ -34,6 +34,18 @@ export class Book extends Document {
   @Prop()
   file_url: string;
 
+  @Prop({ required: true })
+  genre: string;
+
+  @Prop({ default: false })
+  isBestSeller: boolean;
+
+  @Prop({ default: false })
+  isFeatured: boolean;
+
+  @Prop()
+  coverImageUrl: string;
+
   @Prop({
     required: true,
     default: () => new Date(),

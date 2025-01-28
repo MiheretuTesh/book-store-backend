@@ -51,8 +51,33 @@ export class CreateBookDto {
   @IsOptional()
   file_url?: string;
 
+  @ApiProperty({ description: 'URL of the book cover image' })
+  @IsString()
+  @IsOptional()
+  coverImageUrl?: string;
+
   @ApiProperty({ description: 'Additional notes about the book' })
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiProperty({ description: 'The genre of the book' })
+  @IsString()
+  genre: string;
+
+  @ApiProperty({
+    description: 'Whether the book is a best seller',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isBestSeller: boolean = false;
+
+  @ApiProperty({
+    description: 'Whether the book is featured',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isFeatured: boolean = false;
 }

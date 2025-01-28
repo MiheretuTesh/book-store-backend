@@ -10,7 +10,6 @@ import {
   UploadedFile,
   Query,
   BadRequestException,
-  // UseGuards,
   Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -19,11 +18,9 @@ import { BookService } from './book.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { UploadService } from '../upload/upload.service';
-// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('books')
 @Controller('books')
-// @UseGuards(JwtAuthGuard)
 export class BookController {
   constructor(
     private readonly booksService: BookService,
@@ -33,48 +30,28 @@ export class BookController {
   @Post()
   @ApiOperation({ summary: 'Create a new book' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      fileFilter: (req, file, callback) => {
-        const allowedMimeTypes = [
-          'application/pdf', // PDF
-          'application/epub+zip', // EPUB
-          'application/x-mobipocket-ebook', // MOBI
-          'application/vnd.amazon.ebook', // AZW, AZW3
-          'text/plain', // TXT
-          'application/rtf', // RTF
-          'application/msword', // DOC
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
-        ];
-
-        if (!allowedMimeTypes.includes(file.mimetype)) {
-          return callback(
-            new BadRequestException(
-              'Only book file formats are allowed (PDF, EPUB, MOBI, AZW, TXT, RTF, DOC, DOCX)',
-            ),
-            false,
-          );
-        }
-        callback(null, true);
-      },
-      limits: {
-        fileSize: 100 * 1024 * 1024,
-      },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('file'))
   async create(
     @Request() req,
     @Body() createBookDto: CreateBookDto,
     @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() coverImage?: Express.Multer.File,
   ) {
     if (!file) {
       throw new BadRequestException('Book file is required');
     }
+
     const fileUrl = await this.uploadService.uploadFile(file);
+    let coverImageUrl: string | undefined;
+
+    if (coverImage) {
+      coverImageUrl = await this.uploadService.uploadFile(coverImage);
+    }
 
     return this.booksService.create({
       ...createBookDto,
       file_url: fileUrl,
+      coverImageUrl,
     });
   }
 
@@ -110,6 +87,20 @@ export class BookController {
     });
   }
 
+  @Get('special-books')
+  @ApiOperation({
+    summary: 'Get special books (new arrivals, best sellers, featured)',
+  })
+  async getSpecialBooks() {
+    return this.booksService.getSpecialBooks();
+  }
+
+  @Get('genre/:genre')
+  @ApiOperation({ summary: 'Get books by genre' })
+  async getBooksByGenre(@Param('genre') genre: string) {
+    return this.booksService.getBooksByGenre(genre);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a book by id' })
   findOne(@Param('id') id: string) {
@@ -124,12 +115,19 @@ export class BookController {
     @Param('id') id: string,
     @Body() updateBookDto: UpdateBookDto,
     @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() coverImage?: Express.Multer.File,
   ) {
     let fileUrl: string | undefined;
+    let coverImageUrl: string | undefined;
 
     if (file) {
       fileUrl = await this.uploadService.uploadFile(file);
       updateBookDto.file_url = fileUrl;
+    }
+
+    if (coverImage) {
+      coverImageUrl = await this.uploadService.uploadFile(coverImage);
+      updateBookDto.coverImageUrl = coverImageUrl;
     }
 
     return this.booksService.update(id, updateBookDto);
